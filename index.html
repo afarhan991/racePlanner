@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Summit Split</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">made for the long run</p>
+        <h1>Trail Race Planner</h1>
+        <p class="subtitle">Upload a GPX file, add official cutoffs, and set your target finish. This planner gives you a race-day view of pacing, splits, elapsed time, buffer, and fueling guidance.</p>
+      </div>
+      <div class="hero-card">
+        <div class="metric">
+          <span>Mode</span>
+          <strong>Race-day practical</strong>
+        </div>
+        <div class="metric">
+          <span>Fueling basis</span>
+          <strong>Guideline range</strong>
+        </div>
+        <div class="metric">
+          <span>Status</span>
+          <strong>Free beta</strong>
+        </div>
+      </div>
+    </header>
+
+    <main class="grid">
+      <section class="card">
+        <h2>Race Inputs</h2>
+        <form id="planner-form">
+          <div class="field">
+            <label for="raceName">Race name</label>
+            <input id="raceName" type="text" placeholder="BTR Ultra 60K" />
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="gpxFile">GPX file</label>
+              <input id="gpxFile" type="file" accept=".gpx" />
+            </div>
+            <div class="field">
+              <label for="targetHours">Target finish (hours)</label>
+              <input id="targetHours" type="number" min="1" step="0.1" value="17" />
+            </div>
+          </div>
+
+          <div class="field-row three">
+            <div class="field">
+              <label for="totalCutoff">Total cutoff (hours)</label>
+              <input id="totalCutoff" type="number" min="1" step="0.1" value="19" />
+            </div>
+            <div class="field">
+              <label for="distanceOverride">Distance override (km, optional)</label>
+              <input id="distanceOverride" type="number" min="1" step="0.1" placeholder="Auto from GPX" />
+            </div>
+            <div class="field">
+              <label for="elevationOverride">Elevation gain override (m, optional)</label>
+              <input id="elevationOverride" type="number" min="0" step="1" placeholder="Auto from GPX" />
+            </div>
+          </div>
+
+          <div class="field-row three">
+            <div class="field">
+              <label for="runnerWeight">Body weight (kg, optional)</label>
+              <input id="runnerWeight" type="number" min="30" max="150" step="0.1" placeholder="Optional" />
+            </div>
+            <div class="field">
+              <label for="weatherMode">Dominant weather profile</label>
+              <select id="weatherMode">
+                <option value="mixed">Mixed / changing race conditions</option>
+                <option value="temperate">Temperate</option>
+                <option value="warm">Warm</option>
+                <option value="hot">Hot</option>
+              </select>
+              <div class="field-help">Choose mixed if the race may start cool and get hot later in exposed sections.</div>
+            </div>
+            <div class="field">
+              <label for="aidStationDelay">Estimated stop per CP (minutes)</label>
+              <input id="aidStationDelay" type="number" min="0" step="1" value="4" />
+            </div>
+          </div>
+
+          <div class="field-row three">
+            <div class="field">
+              <label for="smoothMode">Elevation cleanup</label>
+              <select id="smoothMode">
+                <option value="medium">Standard cleanup</option>
+                <option value="light">Light cleanup</option>
+                <option value="strong">Strong cleanup</option>
+              </select>
+              <div class="field-help">Reduces noisy GPX elevation spikes so total gain and loss stay more realistic.</div>
+            </div>
+            <div class="field">
+              <label for="gelCarbs">Carbs per gel (g)</label>
+              <input id="gelCarbs" type="number" min="10" step="1" value="25" />
+            </div>
+            <div class="field">
+              <label for="fuelStartMinutes">Start fueling at minute</label>
+              <input id="fuelStartMinutes" type="number" min="10" step="5" value="25" />
+            </div>
+          </div>
+
+          <div class="checkpoints-header">
+            <div>
+              <h3>Official COP / checkpoint cutoffs (optional)</h3>
+              <p>You can leave this empty or add as many official points as you want. Each COP should include a name, KM marker, and official cutoff time in hours.</p>
+            </div>
+            <button type="button" id="add-checkpoint" class="secondary">+ Add COP</button>
+          </div>
+
+          <div class="cop-guide">
+            <div class="cop-guide-label">Format</div>
+            <div class="cop-guide-example">COP 1 — KM 18 — 8 hours</div>
+            <div class="cop-guide-example">COP 2 — KM 31 — 11 hours</div>
+            <div class="cop-guide-example">Finish / COT — KM 60 — 19 hours</div>
+          </div>
+
+          <div id="checkpoints" class="checkpoint-list"></div>
+
+          <div class="actions">
+            <button type="submit">Generate plan</button>
+            <button type="button" id="load-demo" class="secondary">Load demo: BTR 60K</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="card results">
+        <h2>Race Plan</h2>
+        <div id="empty-state" class="empty-state">
+          Upload a GPX file or load the demo, then generate your plan.
+        </div>
+        <div id="results" hidden>
+          <div class="summary" id="summary"></div>
+          <div class="summary source-chip-row" id="metricSources"></div>
+          <div class="premium-strip">
+            <div>
+              <p class="premium-label">Unreleased feature</p>
+              <h3>Premium race intelligence</h3>
+              <p>Segment terrain scoring, advanced fueling personalization, weather-adjusted pacing, and PDF race card export are still reserved for the paid version.</p>
+            </div>
+            <div class="premium-badges">
+              <span>terrain model</span>
+              <span>weather layer</span>
+              <span>personalized fueling</span>
+              <span>PDF export</span>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Segment</th>
+                  <th>KM</th>
+                  <th>Time on feet</th>
+                  <th>GAP / effort</th>
+                  <th>ETA</th>
+                  <th>Elapsed Time</th>
+                  <th>Fueling</th>
+                  <th>Cutoff</th>
+                  <th>Buffer</th>
+                </tr>
+              </thead>
+              <tbody id="segmentTable"></tbody>
+            </table>
+          </div>
+
+          <div class="panels">
+            <article class="panel">
+              <h3>Fueling & hydration</h3>
+              <div id="fuelingPlan"></div>
+            </article>
+            <article class="panel">
+              <h3>Data classification</h3>
+              <div id="assumptions"></div>
+            </article>
+            <article class="panel">
+              <h3>Fueling schedule</h3>
+              <div id="fuelSchedule"></div>
+            </article>
+          </div>
+          <article class="panel source-panel">
+            <h3>Split points · WS / COP / Finish</h3>
+            <div id="waypointPanel"></div>
+          </article>
+          <article class="panel source-panel">
+            <h3>Source policy</h3>
+            <div id="sourcePolicy"></div>
+          </article>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <template id="checkpoint-template">
+    <div class="checkpoint-row">
+      <input class="cp-name" type="text" placeholder="COP 1 / Aid Station / Finish" />
+      <input class="cp-km" type="number" min="0" step="0.1" placeholder="KM checkpoint" />
+      <input class="cp-cutoff" type="number" min="0" step="0.1" placeholder="Cutoff (hours)" />
+      <button type="button" class="danger remove-checkpoint">×</button>
+    </div>
+  </template>
+
+  <footer class="site-note">Project made by mada. Built from a deep love of running.</footer>
+
+  <script src="sources.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
